@@ -31,10 +31,15 @@ def _log(user, session, tool_name, doctype, filters, result_summary):
 
 
 def list_doctypes(user: str, session: str):
+	"""Returns an explicit `count` alongside the list — confirmed live that without it, a model
+	asked "how many doctypes" will miscount a long raw array rather than reporting the true length
+	(seen live: answered 239 against a real count of 210). Same reasoning as get_count/aggregate
+	always carrying an explicit total rather than expecting the model to count rows itself.
+	"""
 	rows = permissions.list_readable_doctypes(user)
-	result = [{"doctype": r.name, "module": r.module} for r in rows]
-	_log(user, session, "list_doctypes", None, {}, {"count": len(result)})
-	return result
+	doctypes = [{"doctype": r.name, "module": r.module} for r in rows]
+	_log(user, session, "list_doctypes", None, {}, {"count": len(doctypes)})
+	return {"count": len(doctypes), "doctypes": doctypes}
 
 
 def describe_doctype(user: str, session: str, doctype: str):
@@ -138,7 +143,7 @@ def time_trend(
 TOOL_DEFINITIONS = [
 	{
 		"name": "list_doctypes",
-		"description": "List the DocTypes the current user is permitted to read. DocTypes the user cannot read are omitted entirely, not flagged as restricted.",
+		"description": "List the DocTypes the current user is permitted to read. DocTypes the user cannot read are omitted entirely, not flagged as restricted. Returns {count, doctypes} — use the count field directly for 'how many' questions, don't count the array yourself.",
 		"input_schema": {"type": "object", "properties": {}},
 	},
 	{

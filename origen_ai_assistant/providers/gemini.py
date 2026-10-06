@@ -1,7 +1,15 @@
-"""Google Gemini adapter. Implemented against the public google-genai function-calling shape and
-built to the same AIProvider interface as providers/claude.py — but, per this build's explicit scope,
-this adapter has only been exercised against a mocked AIProvider response, never a real Gemini call.
-Treat it as implemented, not verified, until a real API key is supplied and Phase 3's live check runs.
+"""Google Gemini adapter, built to the same AIProvider interface as providers/claude.py.
+
+Live-verified end-to-end on vedica3 with a real API key and real data (not just mocked): correct
+exact counts, correct schema lookups via describe_doctype, correct grouped aggregation summing to
+the true total. Two real, Gemini-specific issues were found and fixed during that verification, not
+assumed away:
+- Gemini 3 requires each function-call part's `thought_signature` to be echoed back unchanged on
+  replay (a hard 400 otherwise, not just a quality note) — carried through `ToolCall.raw`.
+- The model that was live-tested is on Google's free tier, whose per-minute token quota (250k) is
+  easily exhausted by an oversized system prompt — see api.py's `_build_system_prompt` docstring for
+  the actual fix (a lightweight catalog instead of a full per-doctype field dump), which mattered
+  for every provider, not just this one.
 """
 
 from google import genai
@@ -36,7 +44,16 @@ class GeminiProvider(AIProvider):
 				if block.get("type") == "text":
 					parts.append(types.Part(text=block["text"]))
 				elif block.get("type") == "tool_use":
-					parts.append(types.Part(function_call=types.FunctionCall(name=block["name"], args=block["input"])))
+					# Gemini 3 requires the original thought_signature to be echoed back unchanged
+					# on replay (confirmed live: omitting it is a hard 400, not just a quality
+					# degradation) — carried through ToolCall.raw since our canonical message dict
+					# is otherwise provider-agnostic.
+					parts.append(
+						types.Part(
+							function_call=types.FunctionCall(name=block["name"], args=block["input"]),
+							thought_signature=block.get("thought_signature"),
+						)
+					)
 				elif block.get("type") == "tool_result":
 					parts.append(
 						types.Part(
@@ -64,7 +81,9 @@ class GeminiProvider(AIProvider):
 				text_parts.append(part.text)
 			if getattr(part, "function_call", None):
 				fc = part.function_call
-				tool_calls.append(ToolCall(id=fc.name, name=fc.name, input=dict(fc.args or {})))
+				tool_calls.append(
+					ToolCall(id=fc.name, name=fc.name, input=dict(fc.args or {}), raw=getattr(part, "thought_signature", None))
+				)
 
 		return ProviderResponse(
 			text="\n".join(text_parts).strip(),
@@ -77,7 +96,9 @@ class GeminiProvider(AIProvider):
 		if response.text:
 			content.append({"type": "text", "text": response.text})
 		for call in response.tool_calls:
-			content.append({"type": "tool_use", "id": call.id, "name": call.name, "input": call.input})
+			content.append(
+				{"type": "tool_use", "id": call.id, "name": call.name, "input": call.input, "thought_signature": call.raw}
+			)
 		return {"role": "assistant", "content": content}
 
 	def tool_result_message(self, tool_call: ToolCall, result) -> dict:

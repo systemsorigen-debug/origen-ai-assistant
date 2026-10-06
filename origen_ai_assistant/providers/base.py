@@ -11,6 +11,9 @@ class ToolCall:
 	id: str
 	name: str
 	input: dict
+	raw: object = None  # provider-specific metadata that must round-trip unchanged on replay
+	# (e.g. Gemini 3's thought_signature) — opaque to the chat controller, used only by the
+	# provider's own assistant_tool_use_message/tool_result_message implementations.
 
 
 @dataclass

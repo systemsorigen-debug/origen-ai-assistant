@@ -86,7 +86,22 @@ def _create_message(session: str, role: str, content: str, authorization_fingerp
 
 
 def _build_system_prompt(user: str) -> str:
+	"""Deliberately a lightweight catalog, not the full per-doctype field dump — confirmed live
+	that sending every readable doctype's complete field list on every single turn produced a
+	~490,000-character (~120,000-token) system prompt, exhausting a free-tier provider quota in one
+	call and needlessly expensive on any provider. The model has `describe_doctype` for full field
+	detail on whichever specific doctype it's actually about to query — that's what the tool is for.
+	"""
 	context = knowledge.get_context_for_user(user)
+	catalog = [
+		{
+			"doctype": name,
+			"module": entry.get("module"),
+			"field_count": entry.get("field_count"),
+			"has_automation": any((entry.get("automation") or {}).values()),
+		}
+		for name, entry in context["doctypes"].items()
+	]
 	parts = [
 		"You are a read-only analytics assistant inside Frappe Desk. You can only read data the "
 		"current user is permitted to see — you have no tool that can create, update, delete, "
@@ -97,8 +112,13 @@ def _build_system_prompt(user: str) -> str:
 		"aggregate/time_trend/get_count tools. If a result is marked truncated, say so explicitly "
 		"(e.g. 'top 50 of N groups, covering X of the true total Y') — never present a capped result "
 		"as the complete picture. If a time_trend result has sample_only=true, say the per-period "
-		"breakdown is from a bounded sample and may not be exact, even though grand_total is exact.",
-		f"Known site schema (permission-filtered for this user): {frappe.as_json(context['doctypes'])}",
+		"breakdown is from a bounded sample and may not be exact, even though grand_total is exact. "
+		"For any 'how many' question, always use a tool's explicit count/total field — never count "
+		"the entries in a returned list yourself; that produces wrong numbers on longer lists.",
+		"Below is a catalog of DocTypes you may read (name/module/field count only). Before "
+		"querying any specific DocType, call describe_doctype on it first to get its real field "
+		"names/types — do not guess a field name from its label.",
+		f"DocType catalog (permission-filtered for this user): {frappe.as_json(catalog)}",
 	]
 	if context["notes"]:
 		parts.append(f"Business knowledge notes relevant to what you can see: {frappe.as_json(context['notes'])}")
