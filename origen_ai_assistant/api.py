@@ -115,6 +115,10 @@ def _build_system_prompt(user: str) -> str:
 		"breakdown is from a bounded sample and may not be exact, even though grand_total is exact. "
 		"For any 'how many' question, always use a tool's explicit count/total field — never count "
 		"the entries in a returned list yourself; that produces wrong numbers on longer lists.",
+		"If the user corrects or clarifies something durable about the data (e.g. what a status "
+		"value really means) that would help future conversations, call propose_knowledge_update to "
+		"file it for human review. This never takes effect immediately — say so plainly ('I've filed "
+		"that for a Knowledge Manager to review') rather than implying you've already learned it.",
 		"Below is a catalog of DocTypes you may read (name/module/field count only). Before "
 		"querying any specific DocType, call describe_doctype on it first to get its real field "
 		"names/types — do not guess a field name from its label.",

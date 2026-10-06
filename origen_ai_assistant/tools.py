@@ -1,8 +1,15 @@
 """The fixed, read-only tool set exposed to the model. This is the whole safety guarantee: there is no
-tool here, and nowhere else registered, that can insert/update/delete/submit/cancel a document or run
-arbitrary SQL — the model cannot reach a capability that was never built, regardless of how a prompt is
-phrased. Every tool re-checks the real caller's permissions on every call; nothing here trusts a result
-cached from an earlier turn.
+tool here, and nowhere else registered, that can insert/update/delete/submit/cancel a *business* record
+or run arbitrary SQL — the model cannot reach a capability that was never built, regardless of how a
+prompt is phrased. Every tool re-checks the real caller's permissions on every call; nothing here trusts
+a result cached from an earlier turn.
+
+One deliberate, narrow exception: propose_knowledge_update, at the bottom of this file, writes a
+Pending "AI Knowledge Suggestion" — the app's own review-queue state, never a business record, and
+never anything that changes the model's behavior on its own. It only becomes real knowledge once an
+AI Assistant Knowledge Manager approves it (see ai_knowledge_suggestion.py's on_update) — this is the
+actual mechanism behind "the assistant gets better from what we tell it": nothing is believed
+automatically from a chat message alone.
 """
 
 import frappe
@@ -138,6 +145,29 @@ def time_trend(
 	return result
 
 
+def propose_knowledge_update(user: str, session: str, doctype: str, text: str, fieldname: str = None):
+	"""Files a correction for human review — never applied automatically. See the module docstring
+	and ai_knowledge_suggestion.py's on_update for the approval mechanism this feeds.
+	"""
+	if permissions.is_doctype_blocked(doctype) or not frappe.has_permission(doctype, "read", user=user):
+		return {"error": "Cannot propose a correction about a DocType you cannot read."}
+	if not text or not text.strip():
+		return {"error": "text is required."}
+
+	doc = frappe.get_doc(
+		{
+			"doctype": "AI Knowledge Suggestion",
+			"doctype_name": doctype,
+			"fieldname": fieldname or "",
+			"proposed_text": text.strip(),
+			"status": "Pending",
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	_log(user, session, "propose_knowledge_update", doctype, {}, {"suggestion": doc.name})
+	return {"filed": True, "suggestion": doc.name, "note": "Filed for a Knowledge Manager to review — not applied yet."}
+
+
 # Provider-facing tool definitions (name, description, JSON-schema input) — shared across every
 # provider adapter so the chat controller stays provider-agnostic. See providers/base.py.
 TOOL_DEFINITIONS = [
@@ -209,6 +239,19 @@ TOOL_DEFINITIONS = [
 			"required": ["doctype", "date_field", "interval", "metric"],
 		},
 	},
+	{
+		"name": "propose_knowledge_update",
+		"description": "File a correction for human review when the user tells you something durable about a DocType that your schema/business-knowledge context got wrong or missing (e.g. what a status value actually means). This does NOT change anything immediately — an AI Assistant Knowledge Manager must approve it first. Use this when the correction would help future conversations, not for one-off clarifications that only matter to this single question.",
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"doctype": {"type": "string"},
+				"fieldname": {"type": "string", "description": "optional — set when the correction is about one specific field"},
+				"text": {"type": "string", "description": "the correction, written so it stands alone without this conversation's context"},
+			},
+			"required": ["doctype", "text"],
+		},
+	},
 ]
 
 _DISPATCH = {
@@ -218,6 +261,7 @@ _DISPATCH = {
 	"get_count": get_count,
 	"aggregate": aggregate,
 	"time_trend": time_trend,
+	"propose_knowledge_update": propose_knowledge_update,
 }
 
 

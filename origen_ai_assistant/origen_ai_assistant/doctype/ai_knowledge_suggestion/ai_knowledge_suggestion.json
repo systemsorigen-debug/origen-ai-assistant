@@ -5,10 +5,13 @@
  "engine": "InnoDB",
  "field_order": [
   "source_chat_message",
+  "doctype_name",
+  "fieldname",
   "proposed_text",
   "status",
   "reviewed_by",
-  "reviewed_on"
+  "reviewed_on",
+  "promoted_note"
  ],
  "fields": [
   {
@@ -16,6 +19,21 @@
    "fieldtype": "Link",
    "label": "Source Chat Message",
    "options": "AI Assistant Chat Message"
+  },
+  {
+   "description": "Which DocType this correction concerns — required so the resulting knowledge note can be shown only to callers who can actually read that DocType.",
+   "fieldname": "doctype_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "DocType",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "description": "Optional — set when the correction is about one specific field rather than the whole DocType.",
+   "fieldname": "fieldname",
+   "fieldtype": "Data",
+   "label": "Field (optional)"
   },
   {
    "fieldname": "proposed_text",
@@ -44,6 +62,15 @@
    "fieldname": "reviewed_on",
    "fieldtype": "Datetime",
    "label": "Reviewed On",
+   "permlevel": 1,
+   "read_only": 1
+  },
+  {
+   "description": "Set automatically the first time this is approved — prevents a repeat save from creating a duplicate note.",
+   "fieldname": "promoted_note",
+   "fieldtype": "Link",
+   "label": "Promoted Note",
+   "options": "AI Knowledge Note",
    "permlevel": 1,
    "read_only": 1
   }

@@ -64,6 +64,19 @@ def write_knowledge_file() -> None:
 
 	from frappe.utils.file_manager import save_file
 
+	# save_file always creates a new File record rather than overwriting, and Frappe stores the
+	# deduped/randomized filename (e.g. "ai_assistant_knowledgeb1ee14.md") as file_name, not the
+	# literal name passed in — confirmed live that filtering on the exact passed-in name matched
+	# nothing and every call (one per Note save, per Suggestion approval, per Discovery) left a new
+	# orphaned copy. This Settings record only ever has this one attachment from this app, so a plain
+	# attached-doctype/name match for cleanup is safe and simple.
+	for row in frappe.get_all(
+		"File",
+		filters={"attached_to_doctype": "AI Assistant Settings", "attached_to_name": settings.name},
+		pluck="name",
+	):
+		frappe.delete_doc("File", row, ignore_permissions=True, force=True, delete_permanently=True)
+
 	save_file(
 		"ai_assistant_knowledge.md",
 		"\n".join(lines),
