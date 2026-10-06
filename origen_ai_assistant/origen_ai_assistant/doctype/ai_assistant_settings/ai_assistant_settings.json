@@ -1,0 +1,284 @@
+{
+ "actions": [],
+ "creation": "2026-10-06 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "section_break_connection",
+  "provider",
+  "column_break_connection",
+  "claude_model",
+  "claude_api_key",
+  "gemini_model",
+  "gemini_api_key",
+  "openai_model",
+  "openai_api_key",
+  "section_break_data_scope",
+  "excluded_doctypes",
+  "excluded_fields",
+  "masking_rules",
+  "section_break_knowledge",
+  "discovery_status",
+  "discovery_last_run",
+  "discovery_last_error",
+  "column_break_knowledge",
+  "knowledge_refresh_frequency",
+  "knowledge_version_active",
+  "section_break_limits",
+  "max_tool_iterations",
+  "max_rows_per_query",
+  "max_response_tokens",
+  "turn_timeout_seconds",
+  "column_break_limits",
+  "max_concurrent_requests_per_user",
+  "max_concurrent_requests_site",
+  "daily_request_budget",
+  "section_break_retention",
+  "chat_retention_days",
+  "audit_retention_days",
+  "knowledge_version_retention_count"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "description": "Global kill-switch. Disabling takes effect immediately on the next request, server-side, regardless of what any already-open browser tab still shows.",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "section_break_connection",
+   "fieldtype": "Section Break",
+   "label": "AI Connection"
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Claude\nGemini\nOpenAI",
+   "default": "Claude",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_connection",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.provider==\"Claude\"",
+   "fieldname": "claude_model",
+   "fieldtype": "Select",
+   "label": "Claude Model",
+   "options": "claude-opus-5\nclaude-sonnet-5\nclaude-haiku-4-5",
+   "default": "claude-opus-5"
+  },
+  {
+   "depends_on": "eval:doc.provider==\"Claude\"",
+   "fieldname": "claude_api_key",
+   "fieldtype": "Password",
+   "label": "Claude API Key"
+  },
+  {
+   "depends_on": "eval:doc.provider==\"Gemini\"",
+   "description": "Implemented against the shared provider interface, but not yet live-tested — verify with a real key before relying on it.",
+   "fieldname": "gemini_model",
+   "fieldtype": "Data",
+   "label": "Gemini Model"
+  },
+  {
+   "depends_on": "eval:doc.provider==\"Gemini\"",
+   "fieldname": "gemini_api_key",
+   "fieldtype": "Password",
+   "label": "Gemini API Key"
+  },
+  {
+   "depends_on": "eval:doc.provider==\"OpenAI\"",
+   "description": "Implemented against the shared provider interface, but not yet live-tested — verify with a real key before relying on it.",
+   "fieldname": "openai_model",
+   "fieldtype": "Data",
+   "label": "OpenAI Model"
+  },
+  {
+   "depends_on": "eval:doc.provider==\"OpenAI\"",
+   "fieldname": "openai_api_key",
+   "fieldtype": "Password",
+   "label": "OpenAI API Key"
+  },
+  {
+   "fieldname": "section_break_data_scope",
+   "fieldtype": "Section Break",
+   "label": "Data Scope"
+  },
+  {
+   "description": "DocTypes the assistant may never read or mention, regardless of role — on top of the hardcoded blocklist (User, Email Account, this app's own DocTypes, etc.).",
+   "fieldname": "excluded_doctypes",
+   "fieldtype": "Table",
+   "label": "Excluded DocTypes",
+   "options": "AI Assistant Excluded Doctype"
+  },
+  {
+   "description": "Specific fields the assistant may never read, select, filter on, or group by — even on a DocType it can otherwise see.",
+   "fieldname": "excluded_fields",
+   "fieldtype": "Table",
+   "label": "Excluded Fields",
+   "options": "AI Assistant Excluded Field"
+  },
+  {
+   "description": "Applied to every value sent to the AI provider (tool results, knowledge context, replayed history) before it leaves this site.",
+   "fieldname": "masking_rules",
+   "fieldtype": "Table",
+   "label": "Masking Rules",
+   "options": "AI Assistant Masking Rule"
+  },
+  {
+   "fieldname": "section_break_knowledge",
+   "fieldtype": "Section Break",
+   "label": "Knowledge"
+  },
+  {
+   "default": "Not Started",
+   "fieldname": "discovery_status",
+   "fieldtype": "Select",
+   "label": "Discovery Status",
+   "options": "Not Started\nRunning\nComplete\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "discovery_last_run",
+   "fieldtype": "Datetime",
+   "label": "Last Successful Discovery",
+   "read_only": 1
+  },
+  {
+   "fieldname": "discovery_last_error",
+   "fieldtype": "Code",
+   "label": "Last Discovery Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_knowledge",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Daily",
+   "fieldname": "knowledge_refresh_frequency",
+   "fieldtype": "Select",
+   "label": "Refresh Frequency",
+   "options": "Daily\nWeekly\nManual Only"
+  },
+  {
+   "fieldname": "knowledge_version_active",
+   "fieldtype": "Link",
+   "label": "Active Knowledge Version",
+   "options": "AI Knowledge Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_limits",
+   "fieldtype": "Section Break",
+   "label": "Limits"
+  },
+  {
+   "default": "8",
+   "fieldname": "max_tool_iterations",
+   "fieldtype": "Int",
+   "label": "Max Tool Iterations Per Turn"
+  },
+  {
+   "default": "100",
+   "fieldname": "max_rows_per_query",
+   "fieldtype": "Int",
+   "label": "Max Rows Per Query"
+  },
+  {
+   "default": "2000",
+   "fieldname": "max_response_tokens",
+   "fieldtype": "Int",
+   "label": "Max Response Tokens"
+  },
+  {
+   "default": "30",
+   "fieldname": "turn_timeout_seconds",
+   "fieldtype": "Int",
+   "label": "Turn Timeout (seconds)"
+  },
+  {
+   "fieldname": "column_break_limits",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "max_concurrent_requests_per_user",
+   "fieldtype": "Int",
+   "label": "Max Concurrent Requests Per User"
+  },
+  {
+   "default": "5",
+   "fieldname": "max_concurrent_requests_site",
+   "fieldtype": "Int",
+   "label": "Max Concurrent Requests Site-Wide"
+  },
+  {
+   "default": "200",
+   "fieldname": "daily_request_budget",
+   "fieldtype": "Int",
+   "label": "Daily Request Budget"
+  },
+  {
+   "fieldname": "section_break_retention",
+   "fieldtype": "Section Break",
+   "label": "Retention"
+  },
+  {
+   "default": "90",
+   "fieldname": "chat_retention_days",
+   "fieldtype": "Int",
+   "label": "Chat Message Retention (days)"
+  },
+  {
+   "default": "180",
+   "fieldname": "audit_retention_days",
+   "fieldtype": "Int",
+   "label": "Audit Log Retention (days)"
+  },
+  {
+   "default": "10",
+   "fieldname": "knowledge_version_retention_count",
+   "fieldtype": "Int",
+   "label": "Knowledge Versions To Keep"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-06 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Origen Ai Assistant",
+ "name": "AI Assistant Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "print": 0,
+   "read": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "print": 0,
+   "read": 1,
+   "role": "AI Assistant Knowledge Manager",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
