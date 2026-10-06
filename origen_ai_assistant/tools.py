@@ -80,6 +80,8 @@ def aggregate(user: str, session: str, doctype: str, group_by: str, metric: str,
 	safe_filters = permissions.validate_filters(doctype, filters, user)
 	if not safe_group_by:
 		return {"error": "group_by field is not permitted or does not exist."}
+	if (metric or "count").lower() in ("sum", "avg") and (not field or not safe_field):
+		return {"error": "field is required (and must be a permitted field) for sum/avg."}
 
 	try:
 		result = aggregation.grouped_aggregate(doctype, safe_group_by, metric, safe_field, safe_filters, user)
@@ -109,10 +111,13 @@ def time_trend(
 	if not safe_date_field:
 		return {"error": "date_field is not permitted or does not exist."}
 
-	meta = frappe.get_meta(doctype)
-	df = meta.get_field(safe_date_field)
-	if not df or df.fieldtype not in ("Date", "Datetime"):
-		return {"error": "date_field must be a Date or Datetime field."}
+	if safe_date_field not in ("creation", "modified"):
+		meta = frappe.get_meta(doctype)
+		df = meta.get_field(safe_date_field)
+		if not df or df.fieldtype not in ("Date", "Datetime"):
+			return {"error": "date_field must be a Date or Datetime field."}
+	if (metric or "count").lower() in ("sum", "avg") and (not field or not safe_field):
+		return {"error": "field is required (and must be a permitted field) for sum/avg."}
 
 	if interval not in ("day", "week", "month"):
 		interval = "day"
@@ -185,7 +190,7 @@ TOOL_DEFINITIONS = [
 	},
 	{
 		"name": "time_trend",
-		"description": "Time-bucketed aggregation (day/week/month) for trend questions, e.g. 'applications per week this quarter'. Returns the true grand_total always.",
+		"description": "Time-bucketed aggregation (day/week/month) for trend questions, e.g. 'applications per week this quarter'. Returns the true grand_total always; if sample_only is true, the per-bucket breakdown was computed from a bounded sample (too many matching rows) and may not be exact — narrow the filters/date range for an exact trend.",
 		"input_schema": {
 			"type": "object",
 			"properties": {

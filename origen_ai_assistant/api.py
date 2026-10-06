@@ -96,7 +96,8 @@ def _build_system_prompt(user: str) -> str:
 		"When reporting a grouped/aggregate result, only state a total that came from the "
 		"aggregate/time_trend/get_count tools. If a result is marked truncated, say so explicitly "
 		"(e.g. 'top 50 of N groups, covering X of the true total Y') — never present a capped result "
-		"as the complete picture.",
+		"as the complete picture. If a time_trend result has sample_only=true, say the per-period "
+		"breakdown is from a bounded sample and may not be exact, even though grand_total is exact.",
 		f"Known site schema (permission-filtered for this user): {frappe.as_json(context['doctypes'])}",
 	]
 	if context["notes"]:
