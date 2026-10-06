@@ -32,9 +32,10 @@ before_uninstall = "origen_ai_assistant.setup.before_uninstall"
 # Scheduled Tasks
 # ------------------
 # Wrapped internally so a provider/discovery failure here can never fail the scheduler cycle for any
-# other app's jobs — see knowledge.scheduled_refresh.
+# other app's jobs — see knowledge.scheduled_refresh / retention.scheduled_cleanup.
 scheduler_events = {
 	"daily": [
 		"origen_ai_assistant.knowledge.scheduled_refresh",
+		"origen_ai_assistant.retention.scheduled_cleanup",
 	],
 }
